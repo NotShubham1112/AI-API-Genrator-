@@ -12,6 +12,7 @@ import {
   X,
   Zap,
   Wifi,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -120,9 +121,10 @@ export function Sidebar({ username }: SidebarProps) {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/dashboard/generate", label: "Generate", icon: Sparkles },
+    { href: "/dashboard/models", label: "Models", icon: Wifi },
     { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
     { href: "/dashboard/usage", label: "Usage Logs", icon: Activity },
-    { href: "/dashboard/models", label: "Models", icon: Wifi },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 

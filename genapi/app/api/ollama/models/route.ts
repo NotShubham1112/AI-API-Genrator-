@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getInstalledModels, getOllamaStatus } from "@/lib/utils-auth";
+import { getInstalledModels, getOllamaStatus } from "@/lib/ollama";
 
 export async function GET() {
   try {
@@ -8,10 +8,14 @@ export async function GET() {
       getInstalledModels(),
     ]);
 
-    return NextResponse.json({ status: status.status, models });
+    return NextResponse.json({
+      status: status.status,
+      version: status.version,
+      models,
+    });
   } catch {
     return NextResponse.json(
-      { error: "Failed to fetch models" },
+      { error: "Failed to fetch models", status: "offline", models: [] },
       { status: 500 }
     );
   }

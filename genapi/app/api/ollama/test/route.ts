@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { estimateTokens } from "@/lib/utils-auth";
+import { generateWithModel, estimateTokens } from "@/lib/ollama";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { model, prompt } = body;
+    const { model, prompt, temperature, maxTokens } = body;
 
     if (!model || !prompt) {
       return NextResponse.json(
@@ -13,45 +13,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ollamaUrl = process.env.OLLAMA_API_URL || "http://localhost:11434";
     const startTime = Date.now();
-
-    const response = await fetch(`${ollamaUrl}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        prompt,
-        stream: false,
-      }),
+    const result = await generateWithModel(model, prompt, {
+      temperature,
+      maxTokens,
     });
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: "Failed to generate response from Ollama" },
-        { status: 500 }
-      );
-    }
-
-    const data = await response.json();
     const latency = Date.now() - startTime;
-
     const promptTokens = estimateTokens(prompt);
-    const responseTokens = estimateTokens(
-      data.response || ""
-    );
+    const responseTokens = estimateTokens(result.output);
 
     return NextResponse.json({
       success: true,
-      output: data.response,
+      output: result.output,
       latency: `${latency}ms`,
+      latencySeconds: latency / 1000,
       usage: {
         prompt_tokens: promptTokens,
         completion_tokens: responseTokens,
         total_tokens: promptTokens + responseTokens,
       },
+      model: result.model,
+      evalCount: result.evalCount,
+      evalDuration: result.evalDuration,
     });
-  } catch {
+  } catch (error) {
+    console.error("Ollama test error:", error);
     return NextResponse.json(
       { error: "Failed to test model" },
       { status: 500 }

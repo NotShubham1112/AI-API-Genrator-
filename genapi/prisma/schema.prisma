@@ -60,10 +60,23 @@ model UsageLog {
 }
 
 model Settings {
-  id                      String   @id @default(cuid())
-  defaultModel            String   @default("llama2")
+  id                      String   @id @default("default")
+  defaultModel            String   @default("llama3.2")
   maxRequestsPerMinute    Int      @default(60)
   globalTokenCap          Int?
   autoDisableAbuseKeys    Boolean  @default(true)
   updatedAt               DateTime @updatedAt
+}
+
+model GenerationLog {
+  id             String   @id @default(cuid())
+  model          String
+  prompt         String
+  output         String
+  tokens         Int
+  latency        Float
+  createdAt      DateTime @default(now())
+
+  @@index([model])
+  @@index([createdAt])
 }
