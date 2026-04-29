@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   const ollamaStatus = await getOllamaStatus();
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background">
       <Navbar username={user.username} ollamaStatus={ollamaStatus.status} />
       <Sidebar username={user.username} />
 
