@@ -131,7 +131,7 @@ export function GenerateClient() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</Label>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <Select value={selectedModel} onValueChange={(val) => setSelectedModel(val || "")}>
                 <SelectTrigger className="h-10 bg-white shadow-sm">
                   <SelectValue placeholder="Select model" />
                 </SelectTrigger>
@@ -150,7 +150,7 @@ export function GenerateClient() {
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Temperature</Label>
                 <span className="text-xs font-mono font-bold text-blue-600">{temperature[0]}</span>
               </div>
-              <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="py-2" />
+              <Slider value={temperature} onValueChange={(val) => setTemperature(Array.isArray(val) ? val : [val])} max={2} step={0.1} className="py-2" />
             </div>
 
             <div className="space-y-2 pt-2">

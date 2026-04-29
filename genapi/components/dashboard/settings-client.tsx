@@ -178,7 +178,7 @@ export function SettingsClient() {
                     <Label className="text-sm font-medium">Global Default Model</Label>
                     <Select 
                       value={settings.defaultModel} 
-                      onValueChange={(val) => setSettings({ ...settings, defaultModel: val })}
+                      onValueChange={(val) => setSettings({ ...settings, defaultModel: val || "" })}
                     >
                       <SelectTrigger className="h-10 bg-slate-50/50">
                         <SelectValue placeholder="Select a model" />

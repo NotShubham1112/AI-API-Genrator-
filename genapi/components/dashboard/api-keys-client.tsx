@@ -16,6 +16,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -56,14 +57,22 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 interface ApiKeyItem {
@@ -99,7 +108,7 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [defaultModel, setDefaultModel] = useState<string>("");
   const [allModelsAccess, setAllModelsAccess] = useState(true);
-  
+
   const [createdKey, setCreatedKey] = useState<{
     key: string;
     message: string;
@@ -225,11 +234,11 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger render={
             <Button className="h-10 px-5 rounded-lg shadow-sm">
               <Plus className="mr-2 size-4" /> Create new key
             </Button>
-          </DialogTrigger>
+          } />
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Create API Key</DialogTitle>
@@ -240,33 +249,33 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
             <div className="grid gap-5 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Key name</Label>
-                <Input 
-                  id="name" 
-                  placeholder="e.g. Production Web App" 
-                  value={newKeyName} 
-                  onChange={(e) => setNewKeyName(e.target.value)} 
+                <Input
+                  id="name"
+                  placeholder="e.g. Production Web App"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
                   className="h-10"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tokenLimit">Token limit (optional)</Label>
-                  <Input 
-                    id="tokenLimit" 
-                    type="number" 
-                    placeholder="Unlimited" 
-                    value={newKeyTokenLimit} 
-                    onChange={(e) => setNewKeyTokenLimit(e.target.value)} 
+                  <Input
+                    id="tokenLimit"
+                    type="number"
+                    placeholder="Unlimited"
+                    value={newKeyTokenLimit}
+                    onChange={(e) => setNewKeyTokenLimit(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="requestLimit">Request limit (optional)</Label>
-                  <Input 
-                    id="requestLimit" 
-                    type="number" 
-                    placeholder="Unlimited" 
-                    value={newKeyRequestLimit} 
-                    onChange={(e) => setNewKeyRequestLimit(e.target.value)} 
+                  <Input
+                    id="requestLimit"
+                    type="number"
+                    placeholder="Unlimited"
+                    value={newKeyRequestLimit}
+                    onChange={(e) => setNewKeyRequestLimit(e.target.value)}
                   />
                 </div>
               </div>
@@ -274,10 +283,10 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
                 <div className="flex items-center justify-between">
                   <Label>Model access</Label>
                   <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id="all-models" 
-                      checked={allModelsAccess} 
-                      onCheckedChange={(c) => setAllModelsAccess(!!c)} 
+                    <Checkbox
+                      id="all-models"
+                      checked={allModelsAccess}
+                      onCheckedChange={(c) => setAllModelsAccess(!!c)}
                     />
                     <Label htmlFor="all-models" className="text-sm font-normal cursor-pointer">All models</Label>
                   </div>
@@ -287,10 +296,10 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
                     <div className="space-y-2">
                       {initialModels.map((m) => (
                         <div key={m.name} className="flex items-center gap-2">
-                          <Checkbox 
-                            id={m.name} 
-                            checked={selectedModels.includes(m.name)} 
-                            onCheckedChange={() => toggleModel(m.name)} 
+                          <Checkbox
+                            id={m.name}
+                            checked={selectedModels.includes(m.name)}
+                            onCheckedChange={() => toggleModel(m.name)}
                           />
                           <Label htmlFor={m.name} className="text-sm font-normal cursor-pointer">{m.name}</Label>
                         </div>
@@ -360,76 +369,78 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-none bg-slate-50/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground font-medium">Total Requests</span>
-              <Activity className="size-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Requests</span>
+              <Activity className="size-4 text-blue-500" />
             </div>
-            <div className="mt-3">
-              <span className="text-3xl font-bold">{keys.reduce((acc, k) => acc + k.requestsCount, 0).toLocaleString()}</span>
-              <span className="text-xs text-muted-foreground ml-2 font-medium">calls</span>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-3xl font-bold">{(keys || []).reduce((acc, k) => acc + (k.requestsCount || 0), 0).toLocaleString()}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Calls</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Table Section */}
-      <Card className="shadow-sm overflow-hidden border">
+      <div className="w-full mt-8">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[240px] text-xs uppercase tracking-wider font-semibold text-muted-foreground py-4 px-6">Name</TableHead>
-                <TableHead className="w-[200px] text-xs uppercase tracking-wider font-semibold text-muted-foreground py-4 px-6">Secret Key</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground py-4 px-6">Usage</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold text-muted-foreground py-4 px-6">Created</TableHead>
-                <TableHead className="w-[80px] text-right py-4 px-6"></TableHead>
+            <TableHeader className="bg-transparent">
+              <TableRow className="hover:bg-transparent border-b">
+                <TableHead className="w-[280px] text-[10px] uppercase tracking-widest font-bold text-muted-foreground py-4 px-0">Identity & Scope</TableHead>
+                <TableHead className="w-[220px] text-[10px] uppercase tracking-widest font-bold text-muted-foreground py-4 px-0">Credentials</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground py-4 px-0">Quota Usage</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground py-4 px-0">Provisioned</TableHead>
+                <TableHead className="w-[80px] text-right py-4 px-0"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {keys.length > 0 ? (
                 keys.map((key) => (
                   <TableRow key={key.id} className="group hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-col gap-1">
+                    <TableCell className="py-5 px-0">
+                      <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">{key.name}</span>
+                          <span className="text-sm font-bold text-foreground tracking-tight">{key.name}</span>
                           {!key.isActive && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-muted-foreground bg-muted/20 border-muted">Disabled</Badge>
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 font-bold uppercase tracking-tighter">Disabled</Badge>
                           )}
                         </div>
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-tight">
-                          {key.allowedModels === "all" || !key.allowedModels ? "Full Access" : "Limited Access"}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                            {key.allowedModels === "all" || !key.allowedModels ? "Full Engine Access" : "Restricted Access"}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-2 group/key">
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {showKey === key.id ? key.key : `${key.key.substring(0, 10)}••••••••`}
-                        </span>
-                        <div className="flex items-center opacity-0 group-hover/key:opacity-100 transition-opacity">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="size-7 rounded-md"
+                    <TableCell className="py-5 px-0">
+                      <div className="flex items-center gap-2 group/key w-fit">
+                        <code className="text-[11px] font-mono font-medium text-muted-foreground bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                          {showKey === key.id ? key.key : `${key.key.substring(0, 8)}••••••••`}
+                        </code>
+                        <div className="flex items-center gap-1 opacity-0 group-hover/key:opacity-100 transition-all duration-200">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="rounded-md hover:bg-slate-100"
                             onClick={() => setShowKey(showKey === key.id ? null : key.id)}
                           >
-                            {showKey === key.id ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                            {showKey === key.id ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="size-7 rounded-md"
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="rounded-md hover:bg-slate-100"
                             onClick={() => handleCopyKey(key.key)}
                           >
-                            <Copy className="size-3.5" />
+                            <Copy className="size-3" />
                           </Button>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-4 px-0">
                       <div className="space-y-2 max-w-[140px]">
                         <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
                           <span>{key.tokensUsed.toLocaleString()} tokens</span>
@@ -438,18 +449,18 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
                         <Progress value={calculateUsage(key.tokensUsed, key.tokenLimit)} className="h-1 bg-slate-100" />
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-4 px-0">
                       <span className="text-xs text-muted-foreground">
                         {new Date(key.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
+                    <TableCell className="py-4 px-0 text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger render={
                           <Button variant="ghost" size="icon" className="size-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreVertical className="size-4" />
                           </Button>
-                        </DropdownMenuTrigger>
+                        } />
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onClick={() => handleToggleActive(key.id, key.isActive)}>
                             {key.isActive ? <Lock className="mr-2 size-3.5" /> : <ShieldCheck className="mr-2 size-3.5" />}
@@ -486,7 +497,7 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
             </TableBody>
           </Table>
         </div>
-      </Card>
+      </div>
 
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
         <AlertDialogContent>
@@ -506,5 +517,4 @@ export function ApiKeysClient({ initialModels = [] }: ApiKeysClientProps) {
       </AlertDialog>
     </div>
   );
-}
 }
