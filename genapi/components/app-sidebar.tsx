@@ -38,8 +38,9 @@ const data = {
     },
     {
       title: "Chat",
-      url: "/dashboard/generate",
+      url: "/chat",
       icon: MessageSquare,
+      target: "_blank",
     },
     {
       title: "Models",
@@ -82,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  render={<Link href={item.url} />}
+                  render={<Link href={item.url} target={item.target} rel={item.target === "_blank" ? "noopener noreferrer" : undefined} />}
                   tooltip={item.title}
                   isActive={isActive}
                   className={cn(

@@ -288,3 +288,38 @@ export function isValidModelName(name: string): boolean {
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
+
+/**
+ * Generate response using specified model (Streamed)
+ */
+export async function generateStream(
+  model: string,
+  prompt: string,
+  options: Partial<GenerationOptions> = {}
+): Promise<ReadableStream<Uint8Array> | null> {
+  const requestBody: Record<string, unknown> = {
+    model,
+    prompt,
+    stream: true,
+    options: {
+      temperature: options.temperature ?? 0.7,
+      num_predict: options.maxTokens ?? 4096,
+    },
+  };
+
+  if (options.system) {
+    requestBody.system = options.system;
+  }
+
+  const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama stream generation failed: ${response.statusText}`);
+  }
+
+  return response.body;
+}
