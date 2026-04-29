@@ -18,22 +18,15 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { 
   ChevronLeft, 
   ChevronRight, 
-  BarChart3, 
   Activity, 
   Zap, 
   Clock,
-  Filter,
   Search,
+  TrendingUp,
+  BarChart3,
   Calendar
 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +38,7 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, Line, LineChart, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface UsageLog {
   id: string;
@@ -90,7 +84,7 @@ export function UsageLogsClient() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [pagination, setPagination] = useState<PaginationData>({
     page: 1,
-    limit: 10,
+    limit: 15,
     total: 0,
     pages: 1,
   });
@@ -114,7 +108,7 @@ export function UsageLogsClient() {
       const data = await response.json();
       setStats(data);
     } catch {
-      toast.error("Failed to load statistics");
+      toast.error("Failed to load analytics");
     }
   };
 
@@ -125,133 +119,140 @@ export function UsageLogsClient() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(filters.search && { search: filters.search }),
-        ...(filters.model !== "all" && { model: filters.model }),
-        ...(filters.apiKeyId !== "all" && { apiKeyId: filters.apiKeyId }),
-        ...(filters.startDate && { startDate: filters.startDate }),
-        ...(filters.endDate && { endDate: filters.endDate }),
       });
-
       const response = await fetch(`/api/usage-logs?${params}`);
       const data = await response.json();
-
       setLogs(data.logs);
       setPagination(data.pagination);
     } catch {
-      toast.error("Failed to load usage logs");
+      toast.error("Failed to load logs");
     } finally {
       setLoading(false);
     }
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page: newPage,
-    }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
+    <div className="max-w-[1200px] mx-auto space-y-6 py-6 px-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground">Usage Telemetry</h1>
+          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest opacity-50 mt-1">Real-time system consumption metrics.</p>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/20 p-1 rounded-lg border border-border/40">
+           <Button variant="ghost" size="sm" className="text-[10px] h-8 px-4 font-black uppercase tracking-widest">24h</Button>
+           <Button variant="secondary" size="sm" className="text-[10px] h-8 px-4 font-black uppercase tracking-widest shadow-sm">7d</Button>
+           <Button variant="ghost" size="sm" className="text-[10px] h-8 px-4 font-black uppercase tracking-widest">30d</Button>
+        </div>
+      </div>
+
+      {/* Hero Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.cards.totalRequests.toLocaleString() || "0"}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+        <Card className="border-border/60 bg-card/40 shadow-sm rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+               <div className="p-1.5 rounded-lg bg-primary/10 text-primary"><Activity className="size-4" /></div>
+               <Badge variant="outline" className="text-[10px] font-mono border-green-500/20 text-green-500 bg-green-500/5 px-2 py-0.5">+12%</Badge>
+            </div>
+            <div className="text-2xl font-black tracking-tighter tabular-nums">{stats?.cards.totalRequests.toLocaleString() || "0"}</div>
+            <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mt-1 opacity-60">Requests</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tokens Used</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.cards.totalTokens.toLocaleString() || "0"}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+        <Card className="border-border/60 bg-card/40 shadow-sm rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+               <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500"><Zap className="size-4" /></div>
+               <Badge variant="outline" className="text-[10px] font-mono border-blue-500/20 text-blue-500 bg-blue-500/5 px-2 py-0.5">Peak</Badge>
+            </div>
+            <div className="text-2xl font-black tracking-tighter tabular-nums">{stats?.cards.totalTokens.toLocaleString() || "0"}</div>
+            <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mt-1 opacity-60">Tokens</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Keys</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.cards.activeKeys || "0"}</div>
-            <p className="text-xs text-muted-foreground">Current keys</p>
+        <Card className="border-border/60 bg-card/40 shadow-sm rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+               <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-500"><TrendingUp className="size-4" /></div>
+               <Badge variant="outline" className="text-[10px] font-mono border-orange-500/20 text-orange-500 bg-orange-500/5 px-2 py-0.5">Active</Badge>
+            </div>
+            <div className="text-2xl font-black tracking-tighter tabular-nums">{stats?.cards.activeKeys || "0"}</div>
+            <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mt-1 opacity-60">Active Keys</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.cards.avgLatency || "0"}s</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+        <Card className="border-border/60 bg-card/40 shadow-sm rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+               <div className="p-1.5 rounded-lg bg-muted-foreground/10 text-muted-foreground"><Clock className="size-4" /></div>
+               <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground px-2 py-0.5">Stable</Badge>
+            </div>
+            <div className="text-2xl font-black tracking-tighter tabular-nums">{stats?.cards.avgLatency || "0"}s</div>
+            <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground mt-1 opacity-60">Latency</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
+      {/* Visual Analytics */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Requests by Day</CardTitle>
-            <CardDescription>Daily API request volume over the last 30 days</CardDescription>
+        <Card className="border-border/60 bg-card/40 rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+               <BarChart3 className="size-4 text-primary" /> Request Density
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5">
             <ChartContainer config={chartConfig} className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats?.chartData}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
                   <XAxis 
                     dataKey="date" 
                     tickLine={false} 
                     axisLine={false} 
-                    tickMargin={8}
-                    minTickGap={32}
-                    className="text-[10px] text-muted-foreground"
+                    tickMargin={10}
+                    className="text-[10px] font-bold text-muted-foreground"
+                    tickFormatter={(val) => new Date(val).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="requests" fill="var(--color-requests)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="requests" fill="var(--color-requests)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Token Usage Trend</CardTitle>
-            <CardDescription>Daily token consumption trend over the last 30 days</CardDescription>
+
+        <Card className="border-border/60 bg-card/40 rounded-xl">
+          <CardHeader className="p-5 pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+               <Activity className="size-4 text-primary" /> Processing Trend
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5">
             <ChartContainer config={chartConfig} className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats?.chartData}>
                   <defs>
                     <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-tokens)" stopOpacity={0.3} />
+                      <stop offset="5%" stopColor="var(--color-tokens)" stopOpacity={0.1} />
                       <stop offset="95%" stopColor="var(--color-tokens)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
                   <XAxis 
                     dataKey="date" 
                     tickLine={false} 
                     axisLine={false} 
-                    tickMargin={8}
-                    minTickGap={32}
-                    className="text-[10px] text-muted-foreground"
+                    tickMargin={10}
+                    className="text-[10px] font-bold text-muted-foreground"
+                    tickFormatter={(val) => new Date(val).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area 
                     type="monotone" 
                     dataKey="tokens" 
                     stroke="var(--color-tokens)" 
+                    strokeWidth={2}
                     fillOpacity={1} 
                     fill="url(#colorTokens)" 
                   />
@@ -262,67 +263,74 @@ export function UsageLogsClient() {
         </Card>
       </div>
 
-      {/* Logs Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle>Usage Logs</CardTitle>
-            <CardDescription>Detailed history of API calls and token usage</CardDescription>
+      {/* Compact Historical Logs */}
+      <Card className="border-border/60 bg-card/40 overflow-hidden rounded-xl">
+        <CardHeader className="flex flex-row items-center justify-between p-5 border-b border-border/40 bg-muted/10">
+          <div className="space-y-1">
+            <CardTitle className="text-base font-black uppercase tracking-tight">Audit Logs</CardTitle>
+            <CardDescription className="text-[10px] uppercase font-black tracking-widest opacity-40">System history.</CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative hidden lg:block">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search keys..."
-                className="pl-8 w-[200px] h-9"
-                value={filters.search}
-                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-              />
-            </div>
+          <div className="flex items-center gap-3">
+             <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search keys..."
+                  className="pl-9 w-[200px] h-10 text-xs bg-background border-border/60"
+                  value={filters.search}
+                  onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+                />
+             </div>
+             <Button variant="outline" size="sm" className="h-10 text-xs font-black uppercase border-border/60 bg-background px-4">
+                <Calendar className="mr-2 size-4" /> Date
+             </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Time</TableHead>
-                <TableHead>API Key</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead className="text-right">Tokens</TableHead>
-                <TableHead className="text-center">Status</TableHead>
+            <TableHeader className="bg-muted/5">
+              <TableRow className="hover:bg-transparent border-border/40">
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-12 px-5">Timestamp</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-12 px-5">Key</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-12 px-5">Engine</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-12 px-5 text-right">Tokens</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-12 px-5 text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={5} className="h-12 animate-pulse bg-muted/20" />
+                Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i} className="border-border/10">
+                    <TableCell colSpan={5} className="h-12 animate-pulse bg-muted/5" />
                   </TableRow>
                 ))
               ) : logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                    No logs found.
+                  <TableCell colSpan={5} className="h-40 text-center text-muted-foreground italic text-xs">
+                    No telemetry data found.
                   </TableCell>
                 </TableRow>
               ) : (
                 logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs text-muted-foreground">
+                  <TableRow key={log.id} className="group hover:bg-muted/20 transition-colors border-border/10">
+                    <TableCell className="text-[11px] font-mono text-muted-foreground px-5 py-3">
                       {new Date(log.createdAt).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
+                        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
                       })}
                     </TableCell>
-                    <TableCell className="font-medium text-xs">{log.apiKey.name}</TableCell>
-                    <TableCell className="text-xs">{log.model}</TableCell>
-                    <TableCell className="text-right text-xs font-mono">{log.totalTokens.toLocaleString()}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/20">
-                        Success
-                      </Badge>
+                    <TableCell className="font-black text-xs tracking-tight px-5 py-3">{log.apiKey.name}</TableCell>
+                    <TableCell className="px-5 py-3">
+                       <Badge variant="outline" className="text-[10px] font-mono bg-muted/20 border-border/40 px-2 py-0.5">
+                          {log.model}
+                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-xs font-mono font-bold tabular-nums px-5 py-3">
+                       {log.totalTokens.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center px-5 py-3">
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-green-500 bg-green-500/5 px-2 py-1 rounded-full border border-green-500/10">
+                        <div className="size-1.5 rounded-full bg-green-500" />
+                        OK
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -330,28 +338,28 @@ export function UsageLogsClient() {
             </TableBody>
           </Table>
           
-          <div className="flex items-center justify-between p-4 border-t">
-            <div className="text-xs text-muted-foreground">
-              Page {pagination.page} of {pagination.pages}
+          <div className="flex items-center justify-between p-4 border-t border-border/40 bg-muted/5">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Entries: <span className="text-foreground">{pagination.total}</span> | P. {pagination.page} / {pagination.pages}
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="icon"
-                className="size-8"
+                size="sm"
+                className="h-8 text-xs px-4 font-black border-border/60"
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page <= 1}
               >
-                <ChevronLeft className="size-4" />
+                <ChevronLeft className="size-4 mr-1.5" /> Prev
               </Button>
               <Button
                 variant="outline"
-                size="icon"
-                className="size-8"
+                size="sm"
+                className="h-8 text-xs px-4 font-black border-border/60"
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={pagination.page >= pagination.pages}
               >
-                <ChevronRight className="size-4" />
+                Next <ChevronRight className="size-4 ml-1.5" />
               </Button>
             </div>
           </div>

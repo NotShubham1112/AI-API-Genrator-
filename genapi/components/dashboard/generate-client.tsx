@@ -31,10 +31,13 @@ import {
   Send,
   Brain,
   Settings2,
-  Trash2
+  Trash2,
+  Maximize2,
+  Cpu
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface Model {
   name: string;
@@ -74,19 +77,16 @@ export function GenerateClient() {
         setSelectedModel(data.models[0].name);
       }
     } catch {
-      toast.error("Failed to load models");
+      toast.error("Engine offline");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGenerate = useCallback(async () => {
-    if (!selectedModel || !prompt.trim()) {
-      toast.error("Please select a model and enter a prompt");
-      return;
-    }
-
+    if (!selectedModel || !prompt.trim()) return;
     setGenerating(true);
+    setResult(null);
     try {
       const response = await fetch("/api/ollama/generate", {
         method: "POST",
@@ -98,208 +98,162 @@ export function GenerateClient() {
           maxTokens: parseInt(maxTokens) || 2048,
         }),
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Generation failed");
-      
       setResult(data);
-      toast.success("Response generated");
     } catch (error: any) {
-      toast.error(error.message || "Failed to generate response");
+      toast.error(error.message);
     } finally {
       setGenerating(false);
     }
   }, [selectedModel, prompt, temperature, maxTokens]);
 
+  if (loading) return null;
+
   return (
-    <div className="flex flex-col gap-6 lg:h-[calc(100vh-120px)]">
-      <div className="flex items-center justify-between px-2">
+    <div className="h-[calc(100vh-120px)] flex flex-col gap-4 overflow-hidden max-w-[1200px] mx-auto p-2">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Chat Playground</h1>
-          <p className="text-muted-foreground">Test and refine your local AI models.</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-black tracking-tighter">PLAYGROUND</h1>
+            <Badge variant="outline" className="h-5 text-[10px] font-mono border-primary/20 text-primary bg-primary/5 uppercase px-2 py-0.5">v2.4-BETA</Badge>
+          </div>
+          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-0.5 opacity-50">Inference Sandbox</p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/20 border border-border/40">
+           <div className="size-2 rounded-full bg-green-500" />
+           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Stable Connection</span>
         </div>
       </div>
 
-      <div className="grid flex-1 gap-6 lg:grid-cols-[300px_1fr]">
-        {/* Left Panel: Settings */}
-        <aside className="flex flex-col gap-4">
-          <Card className="h-fit">
-            <CardHeader className="py-4">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Settings2 className="size-4" />
-                Model Settings
+      {/* Main Split Layout */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 min-h-0">
+        
+        {/* Left: Tuning Panel */}
+        <Card className="flex flex-col border-border/60 bg-card/30 overflow-hidden rounded-xl">
+           <CardHeader className="p-4 border-b border-border/40 bg-muted/10">
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                 <Settings2 className="size-4 text-primary" /> Parameters
               </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="model">Model</Label>
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger id="model">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((m) => (
-                      <SelectItem key={m.name} value={m.name}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+           </CardHeader>
+           <CardContent className="flex-1 p-5 space-y-6 overflow-auto">
+              <div className="space-y-2">
+                 <Label className="text-xs font-black uppercase text-muted-foreground/80 ml-1">Active Engine</Label>
+                 <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger className="h-10 bg-background border-border/60 text-xs font-bold rounded-lg">
+                       <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       {models.map((m) => <SelectItem key={m.name} value={m.name} className="text-xs">{m.name}</SelectItem>)}
+                    </SelectContent>
+                 </Select>
               </div>
 
-              <div className="grid gap-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="temp">Temperature</Label>
-                  <span className="text-xs font-mono text-muted-foreground">{temperature[0]}</span>
-                </div>
-                <Slider
-                  id="temp"
-                  value={temperature}
-                  onValueChange={setTemperature}
-                  max={2}
-                  step={0.1}
-                />
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between ml-1">
+                    <Label className="text-xs font-black uppercase text-muted-foreground/80">Temperature</Label>
+                    <span className="text-xs font-mono text-primary font-bold">{temperature[0]}</span>
+                 </div>
+                 <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="py-2" />
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="maxTokens">Max Tokens</Label>
-                <Input
-                  id="maxTokens"
-                  type="number"
-                  value={maxTokens}
-                  onChange={(e) => setMaxTokens(e.target.value)}
-                />
+              <div className="space-y-2">
+                 <Label className="text-xs font-black uppercase text-muted-foreground/80 ml-1">Max Tokens</Label>
+                 <div className="flex items-center gap-2">
+                    <Input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className="h-10 bg-background border-border/60 text-xs font-mono rounded-lg" />
+                 </div>
               </div>
-            </CardContent>
-            <CardFooter className="pt-0">
-               <Button 
-                variant="outline" 
-                className="w-full text-xs" 
-                onClick={() => {
-                  setPrompt("");
-                  setResult(null);
-                }}
-              >
-                <Trash2 className="mr-2 size-3" />
-                Clear Chat
+           </CardContent>
+           <CardFooter className="p-4 border-t border-border/40 bg-muted/5">
+              <Button variant="ghost" size="sm" className="w-full h-9 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-destructive" onClick={() => { setPrompt(""); setResult(null); }}>
+                 <Trash2 className="size-4 mr-2" /> Reset Context
               </Button>
-            </CardFooter>
-          </Card>
-        </aside>
+           </CardFooter>
+        </Card>
 
-        {/* Main Panel: Chat & Response */}
-        <main className="flex flex-col gap-4 overflow-hidden">
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            <CardHeader className="border-b py-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Brain className="size-4 text-primary" />
-                Inference
-              </CardTitle>
-              {result && (
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
-                    <Clock className="size-3" />
-                    {result.latency}
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
-                    <Zap className="size-3" />
-                    {result.tokens.total} tokens
-                  </div>
-                </div>
-              )}
-            </CardHeader>
-            
-            <ScrollArea className="flex-1 p-4 bg-muted/5">
-              {!result && !generating && (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-20">
-                  <Sparkles className="size-8 mb-4" />
-                  <p className="text-sm">Enter a prompt to start testing.</p>
-                </div>
-              )}
+        {/* Right: Interaction Canvas */}
+        <div className="flex flex-col gap-3 min-h-0">
+           <Card className="flex-1 flex flex-col border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden rounded-xl">
+              <CardHeader className="p-4 border-b border-border/40 bg-muted/10 flex flex-row items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                       <Brain className="size-4 text-primary" /> System Output
+                    </div>
+                    {result && (
+                       <div className="flex items-center gap-4 border-l border-border/40 pl-4">
+                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                             <Clock className="size-3" /> {result.latency}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
+                             <Zap className="size-3" /> {result.tokens.total}T
+                          </div>
+                       </div>
+                    )}
+                 </div>
+                 <Button variant="ghost" size="icon" className="size-8"><Maximize2 className="size-4 opacity-40" /></Button>
+              </CardHeader>
               
-              {generating && (
-                <div className="flex gap-3 max-w-[80%]">
-                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Brain className="size-4 text-primary animate-pulse" />
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 bg-muted animate-pulse rounded w-full" />
-                    <div className="h-4 bg-muted animate-pulse rounded w-5/6" />
-                    <div className="h-4 bg-muted animate-pulse rounded w-4/6" />
-                  </div>
-                </div>
-              )}
-
-              {result && (
-                <div className="flex gap-4">
-                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Brain className="size-4 text-primary" />
-                  </div>
-                  <div className="flex-1 space-y-4">
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <p className="whitespace-pre-wrap leading-relaxed text-sm">
-                        {result.output}
-                      </p>
+              <ScrollArea className="flex-1 p-6 selection:bg-primary/10">
+                 {!result && !generating && (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-16 opacity-40">
+                       <Sparkles className="size-10 text-primary mb-4" />
+                       <p className="text-xs font-black uppercase tracking-[0.2em]">Signal Pending</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 text-[11px]"
-                        onClick={() => {
-                          navigator.clipboard.writeText(result.output);
-                          toast.success("Copied to clipboard");
-                        }}
-                      >
-                        <Copy className="mr-2 size-3" />
-                        Copy Response
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8 text-[11px]"
-                        onClick={handleGenerate}
-                        disabled={generating}
-                      >
-                        <RefreshCw className="mr-2 size-3" />
-                        Regenerate
-                      </Button>
+                 )}
+                 
+                 {generating && (
+                    <div className="space-y-4">
+                       <div className="flex items-center gap-3">
+                          <Loader2 className="size-4 animate-spin text-primary" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Processing Inference...</span>
+                       </div>
+                       <div className="space-y-1.5 opacity-10">
+                          <div className="h-2 bg-muted rounded w-full" />
+                          <div className="h-2 bg-muted rounded w-5/6" />
+                          <div className="h-2 bg-muted rounded w-4/6" />
+                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-            </ScrollArea>
+                 )}
 
-            <CardFooter className="border-t p-4 bg-background">
-              <div className="relative w-full">
-                <Textarea
-                  placeholder="Type your prompt here..."
-                  className="min-h-[100px] w-full resize-none pr-12 focus-visible:ring-1"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                />
-                <Button 
-                  size="icon" 
-                  className="absolute bottom-3 right-3 size-8"
-                  disabled={generating || !prompt.trim()}
-                  onClick={handleGenerate}
-                >
-                  {generating ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Send className="size-4" />
-                  )}
-                </Button>
+                 {result && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                       <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <p className="whitespace-pre-wrap leading-relaxed text-sm font-medium text-foreground/90">
+                             {result.output}
+                          </p>
+                       </div>
+                       <div className="flex items-center gap-3 pt-4 border-t border-border/40 mt-4">
+                          <Button variant="outline" size="sm" className="h-9 text-[10px] font-black uppercase tracking-widest border-border/60 px-4" onClick={() => { navigator.clipboard.writeText(result.output); toast.success("Copied"); }}>
+                             <Copy className="mr-2 size-3.5" /> Copy Output
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-9 text-[10px] font-black uppercase tracking-widest border-border/60 px-4" onClick={handleGenerate}>
+                             <RefreshCw className="mr-2 size-3.5" /> Retry Request
+                          </Button>
+                       </div>
+                    </div>
+                 )}
+              </ScrollArea>
+
+              <div className="p-4 border-t border-border/40 bg-card">
+                 <div className="relative group">
+                    <Textarea
+                       placeholder="Enter prompt..."
+                       className="min-h-[80px] w-full resize-none bg-muted/10 border-border/40 focus-visible:ring-primary/10 text-xs leading-relaxed p-3 rounded-lg transition-all"
+                       value={prompt}
+                       onChange={(e) => setPrompt(e.target.value)}
+                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+                    />
+                    <div className="absolute bottom-2.5 right-2.5">
+                       <Button size="icon" className="size-8 rounded-lg shadow-lg shadow-primary/5 active:scale-95 transition-all" disabled={generating || !prompt.trim()} onClick={handleGenerate}>
+                          {generating ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                       </Button>
+                    </div>
+                 </div>
               </div>
-            </CardFooter>
-          </Card>
-        </main>
+           </Card>
+        </div>
+
       </div>
     </div>
   );

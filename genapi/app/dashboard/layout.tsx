@@ -34,7 +34,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <AppSidebar user={userData} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4 transition-[width,height] ease-linear">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -64,12 +64,7 @@ export default async function DashboardLayout({
             </div>
           </div>
           <div className="flex items-center gap-4">
-             <form action="/api/auth/logout" method="POST">
-                <Button variant="ghost" size="sm" type="submit" className="text-muted-foreground hover:text-foreground">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
-             </form>
+            {/* Right side header actions if needed */}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">

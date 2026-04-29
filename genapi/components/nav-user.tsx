@@ -20,7 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { EllipsisVerticalIcon, CircleUserRoundIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import { EllipsisVerticalIcon, CircleUserRoundIcon, CreditCardIcon, BellIcon, LogOutIcon, Settings as SettingsIcon } from "lucide-react"
 
 export function NavUser({
   user,
@@ -38,65 +38,56 @@ export function NavUser({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
+              <SidebarMenuButton size="default" className="aria-expanded:bg-muted h-10 px-2" />
             }
           >
-            <Avatar className="size-8 rounded-lg grayscale">
+            <Avatar className="size-6 rounded-md grayscale">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              <AvatarFallback className="rounded-md text-[10px]">CN</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs text-foreground/70">
+            <div className="grid flex-1 text-left text-xs leading-tight">
+              <span className="truncate font-black uppercase tracking-tight">{user.name}</span>
+              <span className="truncate text-[10px] text-foreground/50 font-medium">
                 {user.email}
               </span>
             </div>
-            <EllipsisVerticalIcon className="ml-auto size-4" />
+            <EllipsisVerticalIcon className="ml-auto size-3 opacity-40" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-56"
+            className="min-w-48 p-1.5 rounded-xl border-border/40 shadow-2xl"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8">
+                <div className="flex items-center gap-2 px-2 py-1.5 text-left text-xs">
+                  <Avatar className="size-7 rounded-md">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    <AvatarFallback className="rounded-md">CN</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
+                  <div className="grid flex-1 text-left text-xs leading-tight">
+                    <span className="truncate font-black uppercase">{user.name}</span>
+                    <span className="truncate text-[10px] text-muted-foreground">
                       {user.email}
                     </span>
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="opacity-50" />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CircleUserRoundIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
+              <DropdownMenuItem className="rounded-lg h-9 text-[11px] font-black uppercase tracking-widest" onClick={() => window.location.href='/dashboard/settings'}>
+                <SettingsIcon className="size-3.5 mr-2" />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
-              />
+            <DropdownMenuSeparator className="opacity-50" />
+            <DropdownMenuItem onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.href = "/login";
+            }} className="rounded-lg h-9 text-[11px] font-black uppercase tracking-widest text-destructive focus:text-destructive focus:bg-destructive/5">
+              <LogOutIcon className="size-3.5 mr-2" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

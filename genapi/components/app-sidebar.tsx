@@ -22,6 +22,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
+import { ModeToggle } from "@/components/mode-toggle"
 
 const data = {
   user: {
@@ -90,7 +91,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="p-4 flex flex-row items-center justify-between">
+        <ModeToggle />
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />

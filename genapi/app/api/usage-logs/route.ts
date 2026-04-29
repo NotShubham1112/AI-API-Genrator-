@@ -14,13 +14,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build filter conditions
-    const where: {
-      apiKeyId?: string;
-      model?: string;
-      createdAt?: { gte?: Date; lte?: Date };
-      apiKey?: { name?: { contains: string } };
-    } = {};
+    const where: any = {};
 
     if (apiKeyId && apiKeyId !== "all") {
       where.apiKeyId = apiKeyId;
@@ -64,9 +58,23 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch usage logs:", error);
     return NextResponse.json(
       { error: "Failed to fetch usage logs" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    await prisma.usageLog.deleteMany({});
+    return NextResponse.json({ message: "All logs cleared successfully" });
+  } catch (error) {
+    console.error("Failed to clear logs:", error);
+    return NextResponse.json(
+      { error: "Failed to clear usage logs" },
       { status: 500 }
     );
   }
