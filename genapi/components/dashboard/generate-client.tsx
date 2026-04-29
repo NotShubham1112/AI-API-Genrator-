@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -54,8 +55,6 @@ export function GenerateClient() {
   const [maxTokens, setMaxTokens] = useState<string>("2048");
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
-
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -231,42 +230,34 @@ export function GenerateClient() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative">
+              <div>
                 <Label className="text-slate-300">Selected Model</Label>
-                <button
-                  onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                  className="mt-1.5 flex w-full items-center justify-between rounded-md border border-slate-600 bg-slate-700 px-4 py-3 text-white transition-colors hover:bg-slate-600"
-                >
-                  <span className="truncate">{selectedModel || "Select a model"}</span>
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
-                </button>
-
-                {modelDropdownOpen && (
-                  <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-slate-600 bg-slate-700 shadow-lg">
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="mt-1.5 h-12 w-full border-slate-600 bg-slate-700 text-white hover:bg-slate-600 focus:ring-blue-500">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent className="border-slate-600 bg-slate-700 text-white">
                     {models.map((model) => (
-                      <button
-                        key={model.name}
-                        onClick={() => {
-                          setSelectedModel(model.name);
-                          setModelDropdownOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-slate-600 ${
-                          selectedModel === model.name ? "bg-blue-600/20 text-blue-400" : "text-white"
-                        }`}
+                      <SelectItem 
+                        key={model.name} 
+                        value={model.name}
+                        className="cursor-pointer focus:bg-slate-600 focus:text-white"
                       >
-                        <div>
-                          <p className="font-medium">{model.name}</p>
+                        <div className="flex w-full flex-col items-start gap-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{model.name}</p>
+                            {defaultModel === model.name && (
+                              <Badge variant="outline" className="border-blue-500 bg-blue-500/10 text-blue-400">
+                                Default
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400">{formatBytes(model.size)}</p>
                         </div>
-                        {defaultModel === model.name && (
-                          <Badge variant="outline" className="border-blue-500 text-blue-400">
-                            Default
-                          </Badge>
-                        )}
-                      </button>
+                      </SelectItem>
                     ))}
-                  </div>
-                )}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Temperature */}
@@ -319,7 +310,7 @@ export function GenerateClient() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Enter your prompt here... (e.g., 'Explain quantum computing in simple terms')"
-                className="min-h-40 border-slate-600 bg-slate-700 text-white placeholder:text-slate-500"
+                className="min-h-[200px] resize-y border-slate-600 bg-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500"
                 disabled={generating || status === "offline"}
               />
               <div className="mt-3 flex items-center justify-between">
@@ -329,7 +320,7 @@ export function GenerateClient() {
                 <Button
                   onClick={handleGenerate}
                   disabled={generating || !selectedModel || !prompt.trim() || status === "offline"}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="h-10 bg-blue-600 px-6 font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
                 >
                   {generating ? (
                     <>

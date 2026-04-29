@@ -37,7 +37,7 @@ export function Navbar({ username, ollamaStatus = "offline" }: NavbarProps) {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <Zap className="h-6 w-6 text-blue-500" />
-            <h1 className="text-xl font-bold text-white">LocalAI API</h1>
+            <h1 className="text-xl font-bold text-white">WorkSpace</h1>
           </div>
 
           <div className="hidden items-center gap-4 md:flex">
