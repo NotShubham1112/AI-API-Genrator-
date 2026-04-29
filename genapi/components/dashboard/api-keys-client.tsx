@@ -240,7 +240,7 @@ export function ApiKeysClient() {
       )}
 
       <Dialog>
-        <DialogTrigger asChild>
+        <DialogTrigger>
           <Button className="bg-blue-600 hover:bg-blue-700">
             <Plus className="mr-2 h-4 w-4" />
             Create New Key
