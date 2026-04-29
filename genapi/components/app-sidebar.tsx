@@ -8,7 +8,7 @@ import {
   Activity,
   MessageSquare,
   Settings,
-  Command,
+  Boxes,
 } from "lucide-react"
 
 import {
@@ -22,7 +22,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
-import { ModeToggle } from "@/components/mode-toggle"
 
 const data = {
   user: {
@@ -32,19 +31,24 @@ const data = {
   },
   navMain: [
     {
-      title: "API",
-      url: "/dashboard",
+      title: "API Keys",
+      url: "/dashboard/api-keys",
       icon: Key,
-    },
-    {
-      title: "Usage",
-      url: "/dashboard/usage",
-      icon: Activity,
     },
     {
       title: "Chat",
       url: "/dashboard/generate",
       icon: MessageSquare,
+    },
+    {
+      title: "Models",
+      url: "/dashboard/models",
+      icon: Boxes,
+    },
+    {
+      title: "Usage",
+      url: "/dashboard/usage",
+      icon: Activity,
     },
     {
       title: "Settings",
@@ -58,41 +62,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Command className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-foreground">Local AI API</span>
-                <span className="truncate text-xs text-muted-foreground">Admin Console</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+    <Sidebar collapsible="icon" className="border-r bg-white" {...props}>
+      <SidebarHeader className="h-16 flex items-center px-6 border-b">
+        <Link href="/dashboard" className="flex items-center gap-3 group transition-all">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm group-hover:bg-blue-700 transition-colors">
+            <Boxes className="size-4" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold tracking-tight text-foreground">LocalAI</span>
+            <span className="truncate text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Engine Control</span>
+          </div>
+        </Link>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu className="p-2">
-          {data.navMain.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                render={<Link href={item.url} />}
-                tooltip={item.title}
-                isActive={pathname === item.url}
-                className="transition-all duration-200"
-              >
-                <item.icon className="size-4" />
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+      <SidebarContent className="px-4 py-6">
+        <SidebarMenu className="gap-1">
+          {data.navMain.map((item) => {
+            const isActive = pathname === item.url || (item.url !== "/dashboard" && pathname.startsWith(item.url))
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  render={<Link href={item.url} />}
+                  tooltip={item.title}
+                  isActive={isActive}
+                  className={cn(
+                    "h-10 px-3 rounded-lg transition-all duration-200",
+                    isActive 
+                      ? "bg-blue-50 text-blue-600 font-medium border-blue-100 border shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  <item.icon className={cn("size-4 shrink-0", isActive ? "text-blue-600" : "text-muted-foreground")} />
+                  <span className="text-sm">{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-4 flex flex-row items-center justify-between">
-        <ModeToggle />
+      <SidebarFooter className="p-4 border-t mt-auto bg-slate-50/50">
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />

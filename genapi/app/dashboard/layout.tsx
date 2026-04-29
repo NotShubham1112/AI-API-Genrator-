@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Brain, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Brain, Boxes } from "lucide-react";
 import { prisma } from "@/lib/db";
 
 interface DashboardLayoutProps {
@@ -32,44 +31,40 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={userData} />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-4 transition-[width,height] ease-linear">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-foreground">Local AI API</span>
-              <div className="hidden items-center gap-2 md:flex">
-                <Badge
-                  variant="outline"
-                  className={`${
-                    ollamaStatus.status === "online"
-                      ? "border-green-500/50 bg-green-500/10 text-green-500"
-                      : "border-red-500/50 bg-red-500/10 text-red-500"
-                  }`}
-                >
-                  <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                    ollamaStatus.status === "online" ? "bg-green-500" : "bg-red-500"
-                  }`} />
+      <AppSidebar />
+      <SidebarInset className="bg-white">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="h-4 mx-2" />
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold tracking-tight text-foreground">Workspace</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary text-[10px] font-medium border">
+                  <span className={`h-1.5 w-1.5 rounded-full ${ollamaStatus.status === "online" ? "bg-emerald-500" : "bg-rose-500"}`} />
                   Ollama {ollamaStatus.status === "online" ? "Online" : "Offline"}
-                </Badge>
+                </div>
                 {settings?.defaultModel && (
-                  <Badge variant="outline" className="border-blue-500/50 bg-blue-500/10 text-blue-500">
-                    <Brain className="mr-1.5 h-3 w-3" />
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary text-[10px] font-medium border">
+                    <Brain className="h-3 w-3 text-muted-foreground" />
                     {settings.defaultModel}
-                  </Badge>
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Right side header actions if needed */}
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-medium text-foreground">{userData.name}</span>
+                <span className="text-[10px] text-muted-foreground">{userData.email}</span>
+              </div>
+            </div>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
-          {children}
-        </div>
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+            {children}
+          </div>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

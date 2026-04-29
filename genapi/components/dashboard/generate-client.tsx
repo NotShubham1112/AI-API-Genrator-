@@ -13,12 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
@@ -111,149 +111,172 @@ export function GenerateClient() {
   if (loading) return null;
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col gap-4 overflow-hidden max-w-[1200px] mx-auto p-2">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between shrink-0">
+    <div className="h-[calc(100vh-160px)] flex flex-col gap-6 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black tracking-tighter">PLAYGROUND</h1>
-            <Badge variant="outline" className="h-5 text-[10px] font-mono border-primary/20 text-primary bg-primary/5 uppercase px-2 py-0.5">v2.4-BETA</Badge>
-          </div>
-          <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-0.5 opacity-50">Inference Sandbox</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Playground</h1>
+          <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+            Test and refine your prompts with real-time inference from local models.
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/20 border border-border/40">
-           <div className="size-2 rounded-full bg-green-500" />
-           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Stable Connection</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
+          <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wider">Engine Ready</span>
         </div>
       </div>
 
-      {/* Main Split Layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 min-h-0">
-        
-        {/* Left: Tuning Panel */}
-        <Card className="flex flex-col border-border/60 bg-card/30 overflow-hidden rounded-xl">
-           <CardHeader className="p-4 border-b border-border/40 bg-muted/10">
-              <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                 <Settings2 className="size-4 text-primary" /> Parameters
-              </CardTitle>
-           </CardHeader>
-           <CardContent className="flex-1 p-5 space-y-6 overflow-auto">
-              <div className="space-y-2">
-                 <Label className="text-xs font-black uppercase text-muted-foreground/80 ml-1">Active Engine</Label>
-                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                    <SelectTrigger className="h-10 bg-background border-border/60 text-xs font-bold rounded-lg">
-                       <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                       {models.map((m) => <SelectItem key={m.name} value={m.name} className="text-xs">{m.name}</SelectItem>)}
-                    </SelectContent>
-                 </Select>
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 min-h-0">
+        {/* Left: Configuration */}
+        <div className="space-y-6 overflow-auto pr-2">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Model</Label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="h-10 bg-white shadow-sm">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((m) => (
+                    <SelectItem key={m.name} value={m.name} className="text-sm">
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Temperature</Label>
+                <span className="text-xs font-mono font-bold text-blue-600">{temperature[0]}</span>
               </div>
+              <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="py-2" />
+            </div>
 
-              <div className="space-y-4">
-                 <div className="flex items-center justify-between ml-1">
-                    <Label className="text-xs font-black uppercase text-muted-foreground/80">Temperature</Label>
-                    <span className="text-xs font-mono text-primary font-bold">{temperature[0]}</span>
-                 </div>
-                 <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="py-2" />
-              </div>
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Max Tokens</Label>
+              <Input
+                type="number"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(e.target.value)}
+                className="h-10 bg-white shadow-sm font-mono text-sm"
+              />
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                 <Label className="text-xs font-black uppercase text-muted-foreground/80 ml-1">Max Tokens</Label>
-                 <div className="flex items-center gap-2">
-                    <Input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className="h-10 bg-background border-border/60 text-xs font-mono rounded-lg" />
-                 </div>
-              </div>
-           </CardContent>
-           <CardFooter className="p-4 border-t border-border/40 bg-muted/5">
-              <Button variant="ghost" size="sm" className="w-full h-9 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-destructive" onClick={() => { setPrompt(""); setResult(null); }}>
-                 <Trash2 className="size-4 mr-2" /> Reset Context
-              </Button>
-           </CardFooter>
-        </Card>
+          <Separator />
 
-        {/* Right: Interaction Canvas */}
-        <div className="flex flex-col gap-3 min-h-0">
-           <Card className="flex-1 flex flex-col border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden rounded-xl">
-              <CardHeader className="p-4 border-b border-border/40 bg-muted/10 flex flex-row items-center justify-between">
-                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
-                       <Brain className="size-4 text-primary" /> System Output
-                    </div>
-                    {result && (
-                       <div className="flex items-center gap-4 border-l border-border/40 pl-4">
-                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                             <Clock className="size-3" /> {result.latency}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                             <Zap className="size-3" /> {result.tokens.total}T
-                          </div>
-                       </div>
-                    )}
-                 </div>
-                 <Button variant="ghost" size="icon" className="size-8"><Maximize2 className="size-4 opacity-40" /></Button>
-              </CardHeader>
-              
-              <ScrollArea className="flex-1 p-6 selection:bg-primary/10">
-                 {!result && !generating && (
-                    <div className="h-full flex flex-col items-center justify-center text-center py-16 opacity-40">
-                       <Sparkles className="size-10 text-primary mb-4" />
-                       <p className="text-xs font-black uppercase tracking-[0.2em]">Signal Pending</p>
-                    </div>
-                 )}
-                 
-                 {generating && (
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-3">
-                          <Loader2 className="size-4 animate-spin text-primary" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Processing Inference...</span>
-                       </div>
-                       <div className="space-y-1.5 opacity-10">
-                          <div className="h-2 bg-muted rounded w-full" />
-                          <div className="h-2 bg-muted rounded w-5/6" />
-                          <div className="h-2 bg-muted rounded w-4/6" />
-                       </div>
-                    </div>
-                 )}
-
-                 {result && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                       <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <p className="whitespace-pre-wrap leading-relaxed text-sm font-medium text-foreground/90">
-                             {result.output}
-                          </p>
-                       </div>
-                       <div className="flex items-center gap-3 pt-4 border-t border-border/40 mt-4">
-                          <Button variant="outline" size="sm" className="h-9 text-[10px] font-black uppercase tracking-widest border-border/60 px-4" onClick={() => { navigator.clipboard.writeText(result.output); toast.success("Copied"); }}>
-                             <Copy className="mr-2 size-3.5" /> Copy Output
-                          </Button>
-                          <Button variant="outline" size="sm" className="h-9 text-[10px] font-black uppercase tracking-widest border-border/60 px-4" onClick={handleGenerate}>
-                             <RefreshCw className="mr-2 size-3.5" /> Retry Request
-                          </Button>
-                       </div>
-                    </div>
-                 )}
-              </ScrollArea>
-
-              <div className="p-4 border-t border-border/40 bg-card">
-                 <div className="relative group">
-                    <Textarea
-                       placeholder="Enter prompt..."
-                       className="min-h-[80px] w-full resize-none bg-muted/10 border-border/40 focus-visible:ring-primary/10 text-xs leading-relaxed p-3 rounded-lg transition-all"
-                       value={prompt}
-                       onChange={(e) => setPrompt(e.target.value)}
-                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                    />
-                    <div className="absolute bottom-2.5 right-2.5">
-                       <Button size="icon" className="size-8 rounded-lg shadow-lg shadow-primary/5 active:scale-95 transition-all" disabled={generating || !prompt.trim()} onClick={handleGenerate}>
-                          {generating ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                       </Button>
-                    </div>
-                 </div>
-              </div>
-           </Card>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full h-9 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+            onClick={() => { setPrompt(""); setResult(null); }}
+          >
+            <Trash2 className="size-3.5 mr-2" /> Clear session
+          </Button>
         </div>
 
+        {/* Right: Workspace */}
+        <div className="flex flex-col gap-4 min-h-0">
+          <Card className="flex-1 flex flex-col shadow-sm border overflow-hidden bg-slate-50/30">
+            <div className="px-6 py-3 border-b bg-white/50 backdrop-blur-sm flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Brain className="size-4 text-blue-600" /> Response
+              </div>
+              {result && (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+                    <Clock className="size-3" /> {result.latency}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+                    <Zap className="size-3" /> {result.tokens.total} tokens
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <ScrollArea className="flex-1 p-8">
+              {!result && !generating && (
+                <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-30">
+                  <Sparkles className="size-12 text-blue-600 mb-4" />
+                  <p className="text-sm font-medium">Ready for your prompt</p>
+                </div>
+              )}
+
+              {generating && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 text-blue-600">
+                    <Loader2 className="size-4 animate-spin" />
+                    <span className="text-xs font-semibold uppercase tracking-wider animate-pulse">Generating...</span>
+                  </div>
+                  <div className="space-y-2 opacity-10">
+                    <div className="h-3 bg-slate-400 rounded w-full" />
+                    <div className="h-3 bg-slate-400 rounded w-[95%]" />
+                    <div className="h-3 bg-slate-400 rounded w-[90%]" />
+                  </div>
+                </div>
+              )}
+
+              {result && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+                  <div className="prose prose-slate max-w-none">
+                    <p className="text-sm leading-7 text-foreground/90 whitespace-pre-wrap font-medium">
+                      {result.output}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 pt-6 border-t border-slate-200">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white shadow-sm"
+                      onClick={() => { navigator.clipboard.writeText(result.output); toast.success("Copied to clipboard"); }}
+                    >
+                      <Copy className="mr-2 size-3.5 text-muted-foreground" /> Copy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white shadow-sm"
+                      onClick={handleGenerate}
+                    >
+                      <RefreshCw className="mr-2 size-3.5 text-muted-foreground" /> Regenerate
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+
+            <div className="p-4 border-t bg-white">
+              <div className="relative max-w-4xl mx-auto">
+                <Textarea
+                  placeholder="Enter your prompt here..."
+                  className="min-h-[100px] w-full resize-none border-none focus-visible:ring-0 text-sm leading-relaxed p-4 bg-slate-50/50 rounded-xl"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleGenerate();
+                    }
+                  }}
+                />
+                <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium bg-white px-2 py-1 rounded border shadow-sm mr-2 hidden sm:block">
+                    Press Enter to send
+                  </span>
+                  <Button
+                    size="icon"
+                    className="size-9 rounded-lg shadow-lg shadow-blue-500/10 active:scale-95 transition-all bg-blue-600 hover:bg-blue-700"
+                    disabled={generating || !prompt.trim()}
+                    onClick={handleGenerate}
+                  >
+                    {generating ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
