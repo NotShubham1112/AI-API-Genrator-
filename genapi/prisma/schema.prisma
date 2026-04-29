@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  passwordHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String
+  key            String   @unique
+  isActive       Boolean  @default(true)
+  tokenLimit     Int?
+  requestsCount  Int      @default(0)
+  tokensUsed     Int      @default(0)
+  lastUsedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  usageLogs UsageLog[]
+
+  @@index([isActive])
+}
+
+model UsageLog {
+  id                String   @id @default(cuid())
+  apiKeyId          String
+  apiKey            ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  promptTokens      Int
+  completionTokens  Int
+  totalTokens       Int
+  model             String
+  endpoint          String
+  createdAt         DateTime @default(now())
+
+  @@index([apiKeyId])
+  @@index([createdAt])
+}
+
+model Settings {
+  id                      String   @id @default(cuid())
+  defaultModel            String   @default("llama2")
+  maxRequestsPerMinute    Int      @default(60)
+  globalTokenCap          Int?
+  autoDisableAbuseKeys    Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+}
