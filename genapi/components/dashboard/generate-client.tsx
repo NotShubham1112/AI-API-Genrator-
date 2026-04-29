@@ -6,14 +6,20 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -22,14 +28,17 @@ import {
   RefreshCw,
   Zap,
   Clock,
-  ChevronDown,
+  Send,
+  Brain,
   Settings2,
+  Trash2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Model {
   name: string;
   size: number;
-  modifiedAt: string;
 }
 
 interface GenerationResult {
@@ -45,11 +54,7 @@ interface GenerationResult {
 export function GenerateClient() {
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
-  const [defaultModel, setDefaultModel] = useState<string>("");
-  const [status, setStatus] = useState<"online" | "offline">("offline");
   const [loading, setLoading] = useState(true);
-
-  // Generation state
   const [prompt, setPrompt] = useState("");
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState<string>("2048");
@@ -57,31 +62,19 @@ export function GenerateClient() {
   const [result, setResult] = useState<GenerationResult | null>(null);
 
   useEffect(() => {
-    loadData();
+    loadModels();
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadModels = async () => {
     try {
-      const [modelsRes, settingsRes] = await Promise.all([
-        fetch("/api/ollama/models"),
-        fetch("/api/ollama/set-default"),
-      ]);
-
-      const modelsData = await modelsRes.json();
-      const settingsData = await settingsRes.json();
-
-      setStatus(modelsData.status);
-      setModels(modelsData.models || []);
-      setDefaultModel(settingsData.defaultModel);
-
-      if (modelsData.models?.length > 0 && !selectedModel) {
-        const defaultM = settingsData.defaultModel;
-        const exists = modelsData.models.some((m: Model) => m.name === defaultM);
-        setSelectedModel(exists ? defaultM : modelsData.models[0].name);
+      const response = await fetch("/api/ollama/models");
+      const data = await response.json();
+      setModels(data.models || []);
+      if (data.models?.length > 0) {
+        setSelectedModel(data.models[0].name);
       }
     } catch {
-      toast.error("Failed to load data");
+      toast.error("Failed to load models");
     } finally {
       setLoading(false);
     }
@@ -94,8 +87,6 @@ export function GenerateClient() {
     }
 
     setGenerating(true);
-    setResult(null);
-
     try {
       const response = await fetch("/api/ollama/generate", {
         method: "POST",
@@ -109,352 +100,206 @@ export function GenerateClient() {
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || "Generation failed");
-        return;
-      }
-
+      if (!response.ok) throw new Error(data.error || "Generation failed");
+      
       setResult(data);
-      toast.success("Generation complete");
-    } catch {
-      toast.error("Failed to generate response");
+      toast.success("Response generated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate response");
     } finally {
       setGenerating(false);
     }
   }, [selectedModel, prompt, temperature, maxTokens]);
 
-  const handleCopyOutput = async () => {
-    if (result?.output) {
-      await navigator.clipboard.writeText(result.output);
-      toast.success("Copied to clipboard");
-    }
-  };
-
-  const handleRegenerate = () => {
-    handleGenerate();
-  };
-
-  const formatBytes = (bytes: number) => {
-    const gb = bytes / (1024 * 1024 * 1024);
-    return gb >= 1 ? `${gb.toFixed(2)} GB` : `${(bytes / 1024 / 1024).toFixed(0)} MB`;
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="mt-2 h-5 w-48" />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 lg:h-[calc(100vh-120px)]">
+      <div className="flex items-center justify-between px-2">
         <div>
-          <h1 className="text-3xl font-bold text-white">Generate</h1>
-          <p className="mt-1 text-slate-400">
-            Create AI responses using your local Ollama models
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Chat Playground</h1>
+          <p className="text-muted-foreground">Test and refine your local AI models.</p>
         </div>
-        {status === "online" && (
-          <Badge variant="outline" className="border-green-600 bg-green-950 text-green-400">
-            <span className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
-            Ollama Online
-          </Badge>
-        )}
       </div>
 
-      {/* Status Banner */}
-      {status === "offline" && (
-        <Card className="border-red-900 bg-red-950">
-          <CardContent className="flex items-center gap-3 py-4">
-            <div className="rounded-full bg-red-900 p-2">
-              <Zap className="h-5 w-5 text-red-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-red-200">Ollama is offline</p>
-              <p className="text-sm text-red-300/70">
-                Start Ollama with:{" "}
-                <code className="rounded bg-red-900/50 px-1.5 py-0.5">ollama serve</code>
-              </p>
-            </div>
-            <Button
-              onClick={loadData}
-              variant="outline"
-              className="ml-auto border-red-700 text-red-300 hover:bg-red-900"
-            >
-              Retry Connection
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {status === "online" && models.length === 0 && (
-        <Card className="border-yellow-900 bg-yellow-950">
-          <CardContent className="flex items-center gap-3 py-4">
-            <div className="rounded-full bg-yellow-900 p-2">
-              <Sparkles className="h-5 w-5 text-yellow-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-yellow-200">No models installed</p>
-              <p className="text-sm text-yellow-300/70">
-                Pull a model using:{" "}
-                <code className="rounded bg-yellow-900/50 px-1.5 py-0.5">ollama pull llama3.2</code>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Controls */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Model Selection Card */}
-          <Card className="border-slate-700 bg-slate-800">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-blue-400" />
-                <CardTitle className="text-base font-medium text-white">
-                  Model Configuration
-                </CardTitle>
-              </div>
+      <div className="grid flex-1 gap-6 lg:grid-cols-[300px_1fr]">
+        {/* Left Panel: Settings */}
+        <aside className="flex flex-col gap-4">
+          <Card className="h-fit">
+            <CardHeader className="py-4">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Settings2 className="size-4" />
+                Model Settings
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-slate-300">Selected Model</Label>
+            <CardContent className="grid gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="model">Model</Label>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="mt-1.5 h-12 w-full border-slate-600 bg-slate-700 text-white hover:bg-slate-600 focus:ring-blue-500">
-                    <SelectValue placeholder="Select a model" />
+                  <SelectTrigger id="model">
+                    <SelectValue placeholder="Select model" />
                   </SelectTrigger>
-                  <SelectContent className="border-slate-600 bg-slate-700 text-white">
-                    {models.map((model) => (
-                      <SelectItem 
-                        key={model.name} 
-                        value={model.name}
-                        className="cursor-pointer focus:bg-slate-600 focus:text-white"
-                      >
-                        <div className="flex w-full flex-col items-start gap-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{model.name}</p>
-                            {defaultModel === model.name && (
-                              <Badge variant="outline" className="border-blue-500 bg-blue-500/10 text-blue-400">
-                                Default
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-400">{formatBytes(model.size)}</p>
-                        </div>
+                  <SelectContent>
+                    {models.map((m) => (
+                      <SelectItem key={m.name} value={m.name}>
+                        {m.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Temperature */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <Label className="text-slate-300">Temperature</Label>
-                  <span className="text-sm font-medium text-blue-400">{temperature[0].toFixed(1)}</span>
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="temp">Temperature</Label>
+                  <span className="text-xs font-mono text-muted-foreground">{temperature[0]}</span>
                 </div>
                 <Slider
+                  id="temp"
                   value={temperature}
-                  min={0}
+                  onValueChange={setTemperature}
                   max={2}
                   step={0.1}
-                  onValueChange={(values) => setTemperature(Array.isArray(values) ? values : [values])}
-                  className="py-2"
                 />
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>Precise</span>
-                  <span>Creative</span>
-                </div>
               </div>
 
-              {/* Max Tokens */}
-              <div>
-                <Label className="text-slate-300">Max Tokens</Label>
-                <input
+              <div className="grid gap-2">
+                <Label htmlFor="maxTokens">Max Tokens</Label>
+                <Input
+                  id="maxTokens"
                   type="number"
                   value={maxTokens}
                   onChange={(e) => setMaxTokens(e.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-slate-600 bg-slate-700 px-4 py-2.5 text-white outline-none focus:border-blue-500"
-                  min={1}
-                  max={8192}
                 />
               </div>
             </CardContent>
+            <CardFooter className="pt-0">
+               <Button 
+                variant="outline" 
+                className="w-full text-xs" 
+                onClick={() => {
+                  setPrompt("");
+                  setResult(null);
+                }}
+              >
+                <Trash2 className="mr-2 size-3" />
+                Clear Chat
+              </Button>
+            </CardFooter>
           </Card>
+        </aside>
 
-          {/* Prompt Card */}
-          <Card className="border-slate-700 bg-slate-800">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <CardTitle className="text-base font-medium text-white">
-                  Prompt
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter your prompt here... (e.g., 'Explain quantum computing in simple terms')"
-                className="min-h-[200px] resize-y border-slate-600 bg-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500"
-                disabled={generating || status === "offline"}
-              />
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm text-slate-500">
-                  {prompt.length.toLocaleString()} characters
-                </span>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generating || !selectedModel || !prompt.trim() || status === "offline"}
-                  className="h-10 bg-blue-600 px-6 font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2 h-4 w-4" />
-                      Generate
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Output */}
-        <div className="space-y-6">
-          {/* Selected Model Badge */}
-          <Card className="border-slate-700 bg-slate-800">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/20">
-                  <Sparkles className="h-5 w-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-400">Generating with</p>
-                  <p className="font-semibold text-white">{selectedModel || "No model selected"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Output Card */}
-          <Card className="border-slate-700 bg-slate-800">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium text-white">Output</CardTitle>
-                {result && (
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleCopyOutput}
-                      className="h-8 text-slate-400 hover:bg-slate-700 hover:text-white"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleRegenerate}
-                      disabled={generating}
-                      className="h-8 text-slate-400 hover:bg-slate-700 hover:text-white"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
+        {/* Main Panel: Chat & Response */}
+        <main className="flex flex-col gap-4 overflow-hidden">
+          <Card className="flex-1 flex flex-col overflow-hidden">
+            <CardHeader className="border-b py-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Brain className="size-4 text-primary" />
+                Inference
+              </CardTitle>
+              {result && (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+                    <Clock className="size-3" />
+                    {result.latency}
                   </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {generating && (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                  <p className="mt-3 text-sm text-slate-400">Generating response...</p>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+                    <Zap className="size-3" />
+                    {result.tokens.total} tokens
+                  </div>
                 </div>
               )}
-
-              {!generating && !result && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="rounded-full bg-slate-700 p-4">
-                    <Sparkles className="h-8 w-8 text-slate-500" />
+            </CardHeader>
+            
+            <ScrollArea className="flex-1 p-4 bg-muted/5">
+              {!result && !generating && (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-20">
+                  <Sparkles className="size-8 mb-4" />
+                  <p className="text-sm">Enter a prompt to start testing.</p>
+                </div>
+              )}
+              
+              {generating && (
+                <div className="flex gap-3 max-w-[80%]">
+                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Brain className="size-4 text-primary animate-pulse" />
                   </div>
-                  <p className="mt-4 text-sm text-slate-400">
-                    Your generated response will appear here
-                  </p>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-muted animate-pulse rounded w-full" />
+                    <div className="h-4 bg-muted animate-pulse rounded w-5/6" />
+                    <div className="h-4 bg-muted animate-pulse rounded w-4/6" />
+                  </div>
                 </div>
               )}
 
               {result && (
-                <div className="space-y-4">
-                  <div className="max-h-96 overflow-y-auto rounded-md bg-slate-700 p-4">
-                    <pre className="whitespace-pre-wrap text-sm text-slate-200">
-                      {result.output}
-                    </pre>
+                <div className="flex gap-4">
+                  <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Brain className="size-4 text-primary" />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-md bg-slate-700/50 p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-slate-400">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span className="text-xs">Latency</span>
-                      </div>
-                      <p className="mt-1 text-lg font-semibold text-white">{result.latency}</p>
-                    </div>
-                    <div className="rounded-md bg-slate-700/50 p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-slate-400">
-                        <Zap className="h-3.5 w-3.5" />
-                        <span className="text-xs">Tokens</span>
-                      </div>
-                      <p className="mt-1 text-lg font-semibold text-white">
-                        {result.tokens.total.toLocaleString()}
+                  <div className="flex-1 space-y-4">
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="whitespace-pre-wrap leading-relaxed text-sm">
+                        {result.output}
                       </p>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded bg-slate-700/30 p-2 text-center">
-                      <p className="text-xs text-slate-500">Prompt</p>
-                      <p className="text-sm font-medium text-blue-400">
-                        {result.tokens.prompt.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="rounded bg-slate-700/30 p-2 text-center">
-                      <p className="text-xs text-slate-500">Completion</p>
-                      <p className="text-sm font-medium text-green-400">
-                        {result.tokens.completion.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="rounded bg-slate-700/30 p-2 text-center">
-                      <p className="text-xs text-slate-500">Total</p>
-                      <p className="text-sm font-medium text-purple-400">
-                        {result.tokens.total.toLocaleString()}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 text-[11px]"
+                        onClick={() => {
+                          navigator.clipboard.writeText(result.output);
+                          toast.success("Copied to clipboard");
+                        }}
+                      >
+                        <Copy className="mr-2 size-3" />
+                        Copy Response
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 text-[11px]"
+                        onClick={handleGenerate}
+                        disabled={generating}
+                      >
+                        <RefreshCw className="mr-2 size-3" />
+                        Regenerate
+                      </Button>
                     </div>
                   </div>
                 </div>
               )}
-            </CardContent>
+            </ScrollArea>
+
+            <CardFooter className="border-t p-4 bg-background">
+              <div className="relative w-full">
+                <Textarea
+                  placeholder="Type your prompt here..."
+                  className="min-h-[100px] w-full resize-none pr-12 focus-visible:ring-1"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleGenerate();
+                    }
+                  }}
+                />
+                <Button 
+                  size="icon" 
+                  className="absolute bottom-3 right-3 size-8"
+                  disabled={generating || !prompt.trim()}
+                  onClick={handleGenerate}
+                >
+                  {generating ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Send className="size-4" />
+                  )}
+                </Button>
+              </div>
+            </CardFooter>
           </Card>
-        </div>
+        </main>
       </div>
     </div>
   );

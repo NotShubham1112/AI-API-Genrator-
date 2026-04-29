@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -24,8 +25,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  BarChart3, 
+  Activity, 
+  Zap, 
+  Clock,
+  Filter,
+  Search,
+  Calendar
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, Line, LineChart, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { Badge } from "@/components/ui/badge";
 
 interface UsageLog {
   id: string;
@@ -45,11 +64,33 @@ interface PaginationData {
   pages: number;
 }
 
+interface StatsData {
+  cards: {
+    totalRequests: number;
+    totalTokens: number;
+    activeKeys: number;
+    avgLatency: string;
+  };
+  chartData: Array<{ date: string; requests: number; tokens: number }>;
+}
+
+const chartConfig = {
+  requests: {
+    label: "Requests",
+    color: "hsl(var(--primary))",
+  },
+  tokens: {
+    label: "Tokens",
+    color: "hsl(var(--chart-2))",
+  },
+} satisfies ChartConfig;
+
 export function UsageLogsClient() {
   const [logs, setLogs] = useState<UsageLog[]>([]);
+  const [stats, setStats] = useState<StatsData | null>(null);
   const [pagination, setPagination] = useState<PaginationData>({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     pages: 1,
   });
@@ -63,8 +104,19 @@ export function UsageLogsClient() {
   });
 
   useEffect(() => {
+    loadStats();
     loadLogs();
   }, [pagination.page, filters]);
+
+  const loadStats = async () => {
+    try {
+      const response = await fetch("/api/usage-stats");
+      const data = await response.json();
+      setStats(data);
+    } catch {
+      toast.error("Failed to load statistics");
+    }
+  };
 
   const loadLogs = async () => {
     setLoading(true);
@@ -91,31 +143,6 @@ export function UsageLogsClient() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    setPagination((prev) => ({
-      ...prev,
-      page: 1,
-    }));
-  };
-
-  const handleReset = () => {
-    setFilters({
-      search: "",
-      model: "all",
-      apiKeyId: "all",
-      startDate: "",
-      endDate: "",
-    });
-    setPagination((prev) => ({
-      ...prev,
-      page: 1,
-    }));
-  };
-
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({
       ...prev,
@@ -125,192 +152,209 @@ export function UsageLogsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Usage Logs</h1>
-        <p className="mt-1 text-slate-400">
-          Track API usage and token consumption
-        </p>
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.cards.totalRequests.toLocaleString() || "0"}</div>
+            <p className="text-xs text-muted-foreground">Last 30 days</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tokens Used</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.cards.totalTokens.toLocaleString() || "0"}</div>
+            <p className="text-xs text-muted-foreground">Last 30 days</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Keys</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.cards.activeKeys || "0"}</div>
+            <p className="text-xs text-muted-foreground">Current keys</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.cards.avgLatency || "0"}s</div>
+            <p className="text-xs text-muted-foreground">Last 30 days</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="border-slate-700 bg-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <label className="text-sm text-slate-400">Search by Key</label>
+      {/* Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Requests by Day</CardTitle>
+            <CardDescription>Daily API request volume over the last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats?.chartData}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickMargin={8}
+                    minTickGap={32}
+                    className="text-[10px] text-muted-foreground"
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="requests" fill="var(--color-requests)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Token Usage Trend</CardTitle>
+            <CardDescription>Daily token consumption trend over the last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats?.chartData}>
+                  <defs>
+                    <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-tokens)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--color-tokens)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickMargin={8}
+                    minTickGap={32}
+                    className="text-[10px] text-muted-foreground"
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="tokens" 
+                    stroke="var(--color-tokens)" 
+                    fillOpacity={1} 
+                    fill="url(#colorTokens)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Logs Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Usage Logs</CardTitle>
+            <CardDescription>Detailed history of API calls and token usage</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative hidden lg:block">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search keys..."
+                className="pl-8 w-[200px] h-9"
                 value={filters.search}
-                onChange={(e) =>
-                  handleFilterChange("search", e.target.value)
-                }
-                className="border-slate-600 bg-slate-700 text-white"
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
               />
             </div>
-
-            <div>
-              <label className="text-sm text-slate-400">Model</label>
-              <Select
-                value={filters.model || "all"}
-                onValueChange={(value) =>
-                  handleFilterChange("model", value || "all")
-                }
-              >
-                <SelectTrigger className="border-slate-600 bg-slate-700 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-slate-600 bg-slate-700">
-                  <SelectItem value="all">All Models</SelectItem>
-                  <SelectItem value="llama2">Llama 2</SelectItem>
-                  <SelectItem value="llama3">Llama 3</SelectItem>
-                  <SelectItem value="mistral">Mistral</SelectItem>
-                </SelectContent>
-              </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Time</TableHead>
+                <TableHead>API Key</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead className="text-right">Tokens</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={5} className="h-12 animate-pulse bg-muted/20" />
+                  </TableRow>
+                ))
+              ) : logs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                    No logs found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                logs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </TableCell>
+                    <TableCell className="font-medium text-xs">{log.apiKey.name}</TableCell>
+                    <TableCell className="text-xs">{log.model}</TableCell>
+                    <TableCell className="text-right text-xs font-mono">{log.totalTokens.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-500 border-green-500/20">
+                        Success
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          
+          <div className="flex items-center justify-between p-4 border-t">
+            <div className="text-xs text-muted-foreground">
+              Page {pagination.page} of {pagination.pages}
             </div>
-
-            <div>
-              <label className="text-sm text-slate-400">Start Date</label>
-              <Input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) =>
-                  handleFilterChange("startDate", e.target.value)
-                }
-                className="border-slate-600 bg-slate-700 text-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-400">End Date</label>
-              <Input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) =>
-                  handleFilterChange("endDate", e.target.value)
-                }
-                className="border-slate-600 bg-slate-700 text-white"
-              />
-            </div>
-
-            <div className="flex items-end">
+            <div className="flex items-center gap-2">
               <Button
-                onClick={handleReset}
-                className="w-full bg-slate-600 hover:bg-slate-700"
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page <= 1}
               >
-                Reset
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page >= pagination.pages}
+              >
+                <ChevronRight className="size-4" />
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Logs Table */}
-      <Card className="border-slate-700 bg-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">
-            Usage Logs ({pagination.total} total)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="py-8 text-center">
-              <p className="text-slate-400">Loading...</p>
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-slate-400">No usage logs found</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-slate-700 hover:bg-transparent">
-                      <TableHead className="text-slate-400">Date</TableHead>
-                      <TableHead className="text-slate-400">API Key</TableHead>
-                      <TableHead className="text-slate-400">Model</TableHead>
-                      <TableHead className="text-right text-slate-400">
-                        Prompt Tokens
-                      </TableHead>
-                      <TableHead className="text-right text-slate-400">
-                        Completion Tokens
-                      </TableHead>
-                      <TableHead className="text-right text-slate-400">
-                        Total Tokens
-                      </TableHead>
-                      <TableHead className="text-slate-400">Endpoint</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow key={log.id} className="border-slate-700">
-                        <TableCell className="text-slate-300">
-                          {new Date(log.createdAt).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </TableCell>
-                        <TableCell className="font-medium text-white">
-                          {log.apiKey.name}
-                        </TableCell>
-                        <TableCell className="text-slate-300">
-                          {log.model}
-                        </TableCell>
-                        <TableCell className="text-right text-slate-300">
-                          {log.promptTokens}
-                        </TableCell>
-                        <TableCell className="text-right text-slate-300">
-                          {log.completionTokens}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-blue-400">
-                          {log.totalTokens}
-                        </TableCell>
-                        <TableCell className="text-slate-300">
-                          {log.endpoint}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-sm text-slate-400">
-                  Page {pagination.page} of {pagination.pages} (
-                  {pagination.total} total logs)
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() =>
-                      handlePageChange(Math.max(1, pagination.page - 1))
-                    }
-                    disabled={pagination.page === 1}
-                    className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      handlePageChange(
-                        Math.min(pagination.pages, pagination.page + 1)
-                      )
-                    }
-                    disabled={pagination.page === pagination.pages}
-                    className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
         </CardContent>
       </Card>
     </div>

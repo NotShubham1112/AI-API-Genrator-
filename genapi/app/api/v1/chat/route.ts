@@ -48,49 +48,56 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { model, prompt } = chatSchema.parse(body);
 
-    // Get settings and use default model if not provided
+    // Get settings
     const settings = await prisma.settings.findUnique({
       where: { id: "default" },
     });
 
-    const selectedModel = model || settings?.defaultModel || "llama2";
+    // Determine model to use
+    // Priority: Request Model > API Key Default Model > Global Default Model
+    const selectedModel = model || apiKey.defaultModel || settings?.defaultModel || "llama3.2";
 
-    // Check rate limits
-    const settings_data = settings;
-    if (settings_data) {
-      const now = new Date();
-      const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
-
-      const recentLogs = await prisma.usageLog.count({
-        where: {
-          apiKeyId: apiKey.id,
-          createdAt: { gte: oneMinuteAgo },
-        },
-      });
-
-      if (recentLogs >= settings_data.maxRequestsPerMinute) {
+    // Check model permissions
+    if (apiKey.allowedModels && apiKey.allowedModels !== "all") {
+      const allowedList = apiKey.allowedModels.split(",");
+      if (!allowedList.includes(selectedModel)) {
         return NextResponse.json(
-          { error: "Rate limit exceeded" },
-          { status: 429 }
-        );
-      }
-
-      // Check token limit
-      if (
-        settings_data.globalTokenCap &&
-        apiKey.tokensUsed + estimateTokens(prompt) >
-          settings_data.globalTokenCap
-      ) {
-        return NextResponse.json(
-          { error: "Token limit exceeded" },
-          { status: 429 }
+          { error: `Model '${selectedModel}' is not allowed for this API key` },
+          { status: 403 }
         );
       }
     }
 
+    // Check rate limits (RPM)
+    const limit = apiKey.requestLimit || settings?.maxRequestsPerMinute || 60;
+    const now = new Date();
+    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+
+    const recentLogs = await prisma.usageLog.count({
+      where: {
+        apiKeyId: apiKey.id,
+        createdAt: { gte: oneMinuteAgo },
+      },
+    });
+
+    if (recentLogs >= limit) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded" },
+        { status: 429 }
+      );
+    }
+
+    // Check token limit
+    const estimatedTokens = estimateTokens(prompt);
+    if (apiKey.tokenLimit && (apiKey.tokensUsed + estimatedTokens > apiKey.tokenLimit)) {
+      return NextResponse.json(
+        { error: "Token limit for this API key exceeded" },
+        { status: 429 }
+      );
+    }
+
     // Call Ollama API
-    const ollamaUrl =
-      process.env.OLLAMA_API_URL || "http://localhost:11434";
+    const ollamaUrl = settings?.ollamaUrl || process.env.OLLAMA_API_URL || "http://localhost:11434";
 
     const response = await fetch(`${ollamaUrl}/api/generate`, {
       method: "POST",
@@ -112,18 +119,16 @@ export async function POST(request: NextRequest) {
     const ollamaResponse = await response.json();
 
     // Estimate tokens
-    const promptTokens = estimateTokens(prompt);
-    const completionTokens = estimateTokens(
-      ollamaResponse.response || ""
-    );
+    const promptTokens = estimatedTokens;
+    const completionTokens = estimateTokens(ollamaResponse.response || "");
     const totalTokens = promptTokens + completionTokens;
 
     // Update API key stats
     await prisma.apiKey.update({
       where: { id: apiKey.id },
       data: {
-        requestsCount: apiKey.requestsCount + 1,
-        tokensUsed: apiKey.tokensUsed + totalTokens,
+        requestsCount: { increment: 1 },
+        tokensUsed: { increment: totalTokens },
         lastUsedAt: new Date(),
       },
     });
@@ -153,7 +158,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Invalid request body", details: error.errors },
         { status: 400 }
       );
     }

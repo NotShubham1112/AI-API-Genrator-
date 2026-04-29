@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +21,19 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { 
+  Loader2, 
+  Settings as SettingsIcon, 
+  Shield, 
+  Database, 
+  Server, 
+  Download, 
+  Trash2,
+  Save,
+  RotateCcw
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 interface Settings {
   id: string;
@@ -27,6 +41,7 @@ interface Settings {
   maxRequestsPerMinute: number;
   globalTokenCap: number | null;
   autoDisableAbuseKeys: boolean;
+  ollamaUrl: string;
 }
 
 export function SettingsClient() {
@@ -39,6 +54,7 @@ export function SettingsClient() {
     maxRequestsPerMinute: 60,
     globalTokenCap: null as number | null,
     autoDisableAbuseKeys: true,
+    ollamaUrl: "http://localhost:11434",
   });
 
   useEffect(() => {
@@ -57,6 +73,7 @@ export function SettingsClient() {
         maxRequestsPerMinute: data.maxRequestsPerMinute,
         globalTokenCap: data.globalTokenCap,
         autoDisableAbuseKeys: data.autoDisableAbuseKeys,
+        ollamaUrl: data.ollamaUrl || "http://localhost:11434",
       });
     } catch {
       toast.error("Failed to load settings");
@@ -71,7 +88,7 @@ export function SettingsClient() {
       const data = await response.json();
       setModels(data.models?.map((m: { name: string }) => m.name) || []);
     } catch {
-      // Ollama may be offline, that's ok
+      // Ollama may be offline
     }
   };
 
@@ -84,222 +101,222 @@ export function SettingsClient() {
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save settings");
-      }
+      if (!response.ok) throw new Error("Failed to save settings");
 
       const data = await response.json();
       setSettings(data);
-      toast.success("Settings saved successfully");
-    } catch {
-      toast.error("Failed to save settings");
+      toast.success("Settings updated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = () => {
-    if (settings) {
-      setFormData({
-        defaultModel: settings.defaultModel,
-        maxRequestsPerMinute: settings.maxRequestsPerMinute,
-        globalTokenCap: settings.globalTokenCap,
-        autoDisableAbuseKeys: settings.autoDisableAbuseKeys,
-      });
-      toast.success("Settings reset to saved values");
+  const handleClearLogs = async () => {
+    if (!confirm("Are you sure you want to clear all usage logs? This cannot be undone.")) return;
+    try {
+      const response = await fetch("/api/usage-logs", { method: "DELETE" });
+      if (response.ok) toast.success("Logs cleared successfully");
+      else toast.error("Failed to clear logs");
+    } catch {
+      toast.error("An error occurred while clearing logs");
     }
   };
 
-  const handleResetDefaults = () => {
-    setFormData({
-      defaultModel: "llama2",
-      maxRequestsPerMinute: 60,
-      globalTokenCap: null,
-      autoDisableAbuseKeys: true,
-    });
-    toast.success("Reset to default values");
+  const handleExportLogs = () => {
+    window.open("/api/usage-logs/export", "_blank");
+    toast.info("Preparing export...");
   };
 
   if (loading) {
     return (
-      <div className="text-center">
-        <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-        <p className="mt-2 text-slate-400">Loading settings...</p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-sm text-muted-foreground">Loading system configuration...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold text-white">Settings</h1>
-        <p className="mt-1 text-slate-400">
-          Configure your Local AI API Platform
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">Configure global parameters and system defaults.</p>
       </div>
 
-      {/* Settings Form */}
-      <Card className="border-slate-700 bg-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Platform Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Default Model */}
-          <div>
-            <Label className="text-slate-300">Default Model</Label>
-            <p className="mb-2 text-sm text-slate-500">
-              Model used when no specific model is provided
-            </p>
-            {models.length > 0 ? (
-              <Select
-                value={formData.defaultModel}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    defaultModel: value || "llama2",
-                  }))
-                }
-              >
-                <SelectTrigger className="border-slate-600 bg-slate-700 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-slate-600 bg-slate-700">
-                  {models.map((model) => (
-                    <SelectItem key={model} value={model}>
-                      {model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                value={formData.defaultModel}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    defaultModel: e.target.value,
-                  }))
-                }
-                className="border-slate-600 bg-slate-700 text-white"
-                placeholder="llama2"
-              />
-            )}
-          </div>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <SettingsIcon className="size-3.5" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="size-3.5" />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="flex items-center gap-2">
+            <Database className="size-3.5" />
+            Logs
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-2">
+            <Server className="size-3.5" />
+            System
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Max Requests Per Minute */}
-          <div>
-            <Label className="text-slate-300">Max Requests Per Minute</Label>
-            <p className="mb-2 text-sm text-slate-500">
-              Rate limit for API requests
-            </p>
-            <Input
-              type="number"
-              value={formData.maxRequestsPerMinute}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  maxRequestsPerMinute: parseInt(e.target.value) || 60,
-                }))
-              }
-              className="border-slate-600 bg-slate-700 text-white"
-            />
-          </div>
+        {/* General Settings */}
+        <TabsContent value="general">
+          <Card>
+            <CardHeader>
+              <CardTitle>General Settings</CardTitle>
+              <CardDescription>Basic platform defaults and preferences.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-2">
+                <Label htmlFor="defaultModel">Default Inference Model</Label>
+                <p className="text-xs text-muted-foreground mb-1">Used when an API request doesn't specify a model.</p>
+                <Select
+                  value={formData.defaultModel}
+                  onValueChange={(val) => setFormData(f => ({ ...f, defaultModel: val }))}
+                >
+                  <SelectTrigger id="defaultModel">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map(m => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Auto-refresh models</Label>
+                  <p className="text-xs text-muted-foreground">Periodically check for new models in Ollama.</p>
+                </div>
+                <Switch checked={true} disabled />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Global Token Cap */}
-          <div>
-            <Label className="text-slate-300">Global Token Cap (Optional)</Label>
-            <p className="mb-2 text-sm text-slate-500">
-              Maximum tokens allowed globally per day. Leave empty for unlimited.
-            </p>
-            <Input
-              type="number"
-              value={formData.globalTokenCap || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  globalTokenCap: e.target.value ? parseInt(e.target.value) : null,
-                }))
-              }
-              className="border-slate-600 bg-slate-700 text-white"
-              placeholder="Leave empty for unlimited"
-            />
-          </div>
+        {/* Security Settings */}
+        <TabsContent value="security">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security & Limits</CardTitle>
+              <CardDescription>Control API access and resource consumption.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-2">
+                <Label htmlFor="rpm">Global Rate Limit (RPM)</Label>
+                <p className="text-xs text-muted-foreground mb-1">Maximum requests per minute per API key.</p>
+                <Input
+                  id="rpm"
+                  type="number"
+                  value={formData.maxRequestsPerMinute}
+                  onChange={(e) => setFormData(f => ({ ...f, maxRequestsPerMinute: parseInt(e.target.value) }))}
+                />
+              </div>
+              <Separator />
+              <div className="grid gap-2">
+                <Label htmlFor="tokenCap">Global Token Cap</Label>
+                <p className="text-xs text-muted-foreground mb-1">Maximum cumulative tokens allowed across all keys daily.</p>
+                <Input
+                  id="tokenCap"
+                  type="number"
+                  placeholder="Unlimited"
+                  value={formData.globalTokenCap || ""}
+                  onChange={(e) => setFormData(f => ({ ...f, globalTokenCap: e.target.value ? parseInt(e.target.value) : null }))}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Auto-disable abused keys</Label>
+                  <p className="text-xs text-muted-foreground">Block keys that consistently exceed rate limits.</p>
+                </div>
+                <Switch 
+                  checked={formData.autoDisableAbuseKeys} 
+                  onCheckedChange={(val) => setFormData(f => ({ ...f, autoDisableAbuseKeys: val }))}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Auto Disable Abuse Keys */}
-          <div className="flex items-center justify-between rounded-lg border border-slate-600 bg-slate-700 p-4">
-            <div>
-              <Label className="text-slate-300">Auto Disable Abused Keys</Label>
-              <p className="text-sm text-slate-500">
-                Automatically disable keys that exceed rate limits
-              </p>
-            </div>
-            <Switch
-              checked={formData.autoDisableAbuseKeys}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  autoDisableAbuseKeys: checked,
-                }))
-              }
-            />
-          </div>
+        {/* Logs Settings */}
+        <TabsContent value="logs">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage Data & Logs</CardTitle>
+              <CardDescription>Manage historical usage data and exports.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between border p-4 rounded-lg">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Export Usage Logs</p>
+                    <p className="text-xs text-muted-foreground">Download all usage history in JSON format.</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleExportLogs}>
+                    <Download className="mr-2 size-3.5" />
+                    Export JSON
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between border p-4 rounded-lg border-destructive/20 bg-destructive/5">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-destructive">Clear All Logs</p>
+                    <p className="text-xs text-muted-foreground">Permanently delete all historical usage data.</p>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={handleClearLogs}>
+                    <Trash2 className="mr-2 size-3.5" />
+                    Clear Logs
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Settings"
-              )}
-            </Button>
-            <Button
-              onClick={handleReset}
-              className="bg-slate-700 hover:bg-slate-600"
-            >
-              Reset to Saved
-            </Button>
-            <Button
-              onClick={handleResetDefaults}
-              className="bg-slate-700 hover:bg-slate-600"
-            >
-              Reset to Defaults
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        {/* System Settings */}
+        <TabsContent value="system">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Configuration</CardTitle>
+              <CardDescription>Internal backend and connectivity settings.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-2">
+                <Label htmlFor="ollamaUrl">Ollama Endpoint URL</Label>
+                <p className="text-xs text-muted-foreground mb-1">The internal URL where your Ollama server is running.</p>
+                <div className="flex gap-2">
+                  <Input
+                    id="ollamaUrl"
+                    placeholder="http://localhost:11434"
+                    value={formData.ollamaUrl}
+                    onChange={(e) => setFormData(f => ({ ...f, ollamaUrl: e.target.value }))}
+                  />
+                  <Button variant="outline" onClick={() => loadModels()}>Test</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* Information Card */}
-      <Card className="border-slate-700 bg-slate-800">
-        <CardHeader>
-          <CardTitle className="text-white">Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-400">
-          <div>
-            <p className="font-semibold text-white">API Endpoint</p>
-            <p className="font-mono text-xs">POST /api/v1/chat</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white">Authentication</p>
-            <p>Use Bearer token with your API key in the Authorization header</p>
-          </div>
-          <div>
-            <p className="font-semibold text-white">Rate Limiting</p>
-            <p>
-              Requests are rate limited per API key. Excessive usage will
-              trigger automatic key disablement.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end gap-3 mt-8">
+        <Button variant="outline" onClick={() => loadSettings()}>
+          <RotateCcw className="mr-2 size-4" />
+          Reset Changes
+        </Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 size-4" />}
+          Save Configuration
+        </Button>
+      </div>
     </div>
   );
 }

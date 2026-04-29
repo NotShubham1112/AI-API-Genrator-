@@ -37,6 +37,9 @@ model ApiKey {
   tokensUsed     Int      @default(0)
   lastUsedAt     DateTime?
   createdAt      DateTime @default(now())
+  allowedModels  String?  // Comma separated list or "all"
+  defaultModel   String?
+  requestLimit   Int?
   updatedAt      DateTime @updatedAt
 
   usageLogs UsageLog[]
@@ -65,6 +68,7 @@ model Settings {
   maxRequestsPerMinute    Int      @default(60)
   globalTokenCap          Int?
   autoDisableAbuseKeys    Boolean  @default(true)
+  ollamaUrl               String   @default("http://localhost:11434")
   updatedAt               DateTime @updatedAt
 }
 

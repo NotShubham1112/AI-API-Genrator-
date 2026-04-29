@@ -7,16 +7,19 @@ const settingsSchema = z.object({
   maxRequestsPerMinute: z.number().positive().optional(),
   globalTokenCap: z.number().positive().nullable().optional(),
   autoDisableAbuseKeys: z.boolean().optional(),
+  ollamaUrl: z.string().url().optional(),
 });
 
 export async function GET() {
   try {
-    const settings = await prisma.settings.findUnique({
+    let settings = await prisma.settings.findUnique({
       where: { id: "default" },
     });
 
     if (!settings) {
-      return NextResponse.json({ error: "Settings not found" }, { status: 404 });
+      settings = await prisma.settings.create({
+        data: { id: "default" }
+      });
     }
 
     return NextResponse.json(settings);
@@ -33,16 +36,17 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const data = settingsSchema.parse(body);
 
-    const settings = await prisma.settings.update({
+    const settings = await prisma.settings.upsert({
       where: { id: "default" },
-      data,
+      update: data,
+      create: { id: "default", ...data },
     });
 
     return NextResponse.json(settings);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input" },
+        { error: "Invalid input", details: error.errors },
         { status: 400 }
       );
     }
