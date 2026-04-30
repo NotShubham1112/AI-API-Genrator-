@@ -232,8 +232,18 @@ export function ChatClient() {
   const handleCopyDocument = (content: string) => {
      // Remove <think> blocks before copying the final document
      const cleanContent = content.replace(/<think>([\s\S]*?)<\/think>/gi, "");
-     navigator.clipboard.writeText(cleanContent.trim());
-     toast.success("Document copied to clipboard!");
+     
+     if (navigator?.clipboard?.writeText) {
+       navigator.clipboard.writeText(cleanContent.trim())
+         .then(() => {
+           toast.success("Document copied to clipboard!");
+         })
+         .catch(() => {
+           toast.error("Failed to copy to clipboard");
+         });
+     } else {
+       toast.error("Clipboard API is not available");
+     }
   }
 
   return (
